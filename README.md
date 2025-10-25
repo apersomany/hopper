@@ -1,6 +1,6 @@
 # Hopper
 
-A simple Minecraft server proxy written in Rust that provides hostname-based routing and dynamic server registration.
+A simple Minecraft proxy written in Rust that provides hostname-based routing and dynamic server registration.
 
 ## Features
 
