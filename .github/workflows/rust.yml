@@ -2,10 +2,10 @@ name: Rust
 on:
   push:
     branches: ["master"]
-    tags:
-      - "v*"
   pull_request:
     branches: ["master"]
+  release:
+    types: [created]
 env:
   CARGO_TERM_COLOR: always
 jobs:
@@ -64,29 +64,23 @@ jobs:
       - name: Run tests
         run: cargo test --verbose --target ${{ matrix.target }}
 
+      - name: Prepare release artifact
+        if: github.event_name == 'release'
+        shell: bash
+        run: |
+          mkdir -p release
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} release/${{ matrix.asset_name }}
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset_name }}
           path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
         with:
-          path: artifacts
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: artifacts/**/*
-          draft: false
-          prerelease: false
+          files: release/${{ matrix.asset_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
