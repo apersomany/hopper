@@ -1,5 +1,3 @@
-#![feature(hash_map_macro)]
-
 use anyhow::{Result, bail};
 use axum::{
     Router,
