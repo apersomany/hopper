@@ -1,7 +1,8 @@
 use anyhow::{Result, bail};
 use axum::{
     Router,
-    extract::{ConnectInfo, Path, State},
+    extract::{ConnectInfo, Path, Query, State},
+    response::{IntoResponse, Redirect, Response},
     routing::get,
 };
 use dashmap::DashMap;
@@ -98,9 +99,14 @@ impl Default for Server {
         Self {
             routes: DashMap::new(),
             minecraft_proxy: SocketAddr::from((Ipv6Addr::UNSPECIFIED, 25565)),
-            http_api_server: SocketAddr::from((Ipv6Addr::UNSPECIFIED, 80)),
+            http_api_server: SocketAddr::from((Ipv6Addr::LOCALHOST, 80)),
         }
     }
+}
+
+#[derive(Deserialize)]
+struct Register {
+    redirect_url: Option<String>,
 }
 
 impl Server {
@@ -148,12 +154,18 @@ impl Server {
 
     async fn register(
         State(server): State<Arc<Server>>,
+        Query(Register { redirect_url }): Query<Register>,
         Path(hostname): Path<String>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    ) {
+    ) -> Response {
         let origin = SocketAddr::new(addr.ip(), 25565);
         info!("registered route {hostname} to {origin}");
         server.routes.insert(hostname, origin);
+        if let Some(redirect_url) = redirect_url {
+            Redirect::to(redirect_url.as_str()).into_response()
+        } else {
+            ().into_response()
+        }
     }
 
     async fn shutdown(self: Arc<Self>) -> Result<()> {
