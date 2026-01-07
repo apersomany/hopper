@@ -136,6 +136,7 @@ impl Server {
         }
         let protocol = read_varint(&mut packet).await?;
         let hostname = read_string(&mut packet).await?;
+        let hostname = hostname.replace("FORGE", "");
         let origin = self
             .routes
             .get(hostname.as_str())
